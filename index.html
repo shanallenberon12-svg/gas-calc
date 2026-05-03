@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GasCalc Pro — Petroleum Engineering Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg-deep:    #0a0d12;
+  --bg-panel:   #0f1419;
+  --bg-card:    #141c24;
+  --bg-input:   #1a2433;
+  --border:     #1e2d3d;
+  --border-glow:#2a4a6b;
+  --amber:      #f5a623;
+  --amber-dim:  #c47d0e;
+  --amber-glow: rgba(245,166,35,0.15);
+  --cyan:       #00c8e0;
+  --cyan-dim:   #0099b0;
+  --red:        #e05050;
+  --green:      #3ddc97;
+  --text-bright:#e8edf5;
+  --text-mid:   #8a9ab8;
+  --text-dim:   #4a5c72;
+  --font-head:  'Rajdhani', sans-serif;
+  --font-mono:  'Share Tech Mono', monospace;
+  --font-body:  'Barlow', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-bright);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid noise overlay */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* HEADER */
+header {
+  position:sticky;top:0;z-index:100;
+  background: rgba(10,13,18,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 64px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+
+.logo {
+  display:flex;align-items:center;gap:12px;
+}
+.logo-icon {
+  width:36px;height:36px;
+  background: var(--amber);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#000;font-weight:700;font-family:var(--font-mono);
+}
+.logo-text {
+  font-family:var(--font-head);
+  font-size:1.6rem;font-weight:700;
+  letter-spacing:3px;
+  background: linear-gradient(90deg, var(--amber), #fff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.logo-sub {
+  font-family:var(--font-mono);
+  font-size:0.6rem;color:var(--text-dim);
+  letter-spacing:4px;margin-top:-4px;
+}
+
+.header-badges {
+  display:flex;gap:8px;
+}
+.badge {
+  font-family:var(--font-mono);font-size:0.65rem;
+  padding:3px 10px;border-radius:2px;
+  border:1px solid var(--border-glow);
+  color:var(--text-mid);letter-spacing:2px;
+}
+.badge.active { border-color:var(--amber);color:var(--amber); }
+
+/* HERO BANNER */
+.hero {
+  position:relative;z-index:1;
+  padding: 3rem 2rem 2rem;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.hero-title {
+  font-family:var(--font-head);
+  font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:700;letter-spacing:6px;
+  line-height:1.1;
+  color:#fff;
+  text-shadow: 0 0 60px rgba(245,166,35,0.3);
+}
+.hero-title span { color:var(--amber); }
+.hero-sub {
+  font-size:0.85rem;color:var(--text-mid);
+  letter-spacing:3px;margin-top:0.5rem;
+  font-family:var(--font-mono);
+}
+
+/* TABS NAV */
+.tabs-wrapper {
+  position:relative;z-index:1;
+  border-bottom:1px solid var(--border);
+  padding: 0 2rem;
+  display:flex;gap:0;overflow-x:auto;
+  scrollbar-width:none;
+}
+.tab-btn {
+  font-family:var(--font-head);font-size:0.85rem;
+  font-weight:600;letter-spacing:2px;
+  padding:1rem 1.5rem;
+  border:none;background:transparent;
+  color:var(--text-dim);cursor:pointer;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:all 0.2s;
+  position:relative;
+}
+.tab-btn:hover { color:var(--text-mid); }
+.tab-btn.active {
+  color:var(--amber);
+  border-bottom-color:var(--amber);
+}
+.tab-btn .tab-num {
+  font-family:var(--font-mono);
+  font-size:0.6rem;color:var(--text-dim);
+  margin-right:6px;
+}
+.tab-btn.active .tab-num { color:var(--amber-dim); }
+
+/* MAIN LAYOUT */
+.main {
+  position:relative;z-index:1;
+  max-width:1200px;margin:0 auto;
+  padding:2rem;
+}
+
+/* PANEL */
+.calc-panel { display:none; }
+.calc-panel.active { display:block; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.panel-header {
+  margin-bottom:2rem;
+  display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+}
+.panel-title {
+  font-family:var(--font-head);font-size:1.8rem;font-weight:700;letter-spacing:3px;
+}
+.panel-title span { color:var(--amber); }
+.panel-desc { font-size:0.82rem;color:var(--text-mid);margin-top:4px;max-width:600px;line-height:1.6; }
+
+.formula-chip {
+  font-family:var(--font-mono);font-size:0.7rem;
+  background:var(--bg-input);border:1px solid var(--border-glow);
+  color:var(--cyan);padding:6px 14px;border-radius:2px;
+  letter-spacing:1px;white-space:nowrap;
+}
+
+/* GRID */
+.calc-grid {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:1.5rem;
+}
+@media(max-width:700px){ .calc-grid{grid-template-columns:1fr} }
+
+/* CARD */
+.card {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:1.5rem;
+  position:relative;
+  overflow:hidden;
+}
+.card::before {
+  content:'';position:absolute;top:0;left:0;right:0;
+  height:2px;
+  background: linear-gradient(90deg,transparent,var(--amber),transparent);
+  opacity:0.6;
+}
+
+.card-title {
+  font-family:var(--font-head);font-size:0.75rem;
+  font-weight:700;letter-spacing:4px;
+  color:var(--text-mid);margin-bottom:1.2rem;
+  display:flex;align-items:center;gap:8px;
+}
+.card-title::before {
+  content:'';display:inline-block;width:6px;height:6px;
+  background:var(--amber);transform:rotate(45deg);
+}
+
+/* FORM FIELDS */
+.field {
+  margin-bottom:1rem;
+}
+.field label {
+  display:block;font-size:0.72rem;font-weight:500;
+  letter-spacing:2px;color:var(--text-mid);
+  margin-bottom:5px;font-family:var(--font-mono);
+}
+.field label .unit {
+  color:var(--amber-dim);font-size:0.65rem;
+}
+.field input, .field select {
+  width:100%;padding:10px 14px;
+  background:var(--bg-input);
+  border:1px solid var(--border);
+  border-radius:3px;
+  color:var(--text-bright);
+  font-family:var(--font-mono);font-size:0.85rem;
+  outline:none;transition:border-color 0.2s;
+}
+.field input:focus, .field select:focus {
+  border-color:var(--amber);
+  box-shadow:0 0 0 2px var(--amber-glow);
+}
+.field input::placeholder { color:var(--text-dim); }
+
+.field-row { display:grid;grid-template-columns:1fr 1fr;gap:0.8rem; }
+
+/* BUTTON */
+.btn-calc {
+  width:100%;padding:13px;
+  background:var(--amber);
+  color:#0a0d12;
+  font-family:var(--font-head);font-size:1rem;font-weight:700;
+  letter-spacing:4px;border:none;border-radius:3px;cursor:pointer;
+  transition:all 0.2s;margin-top:0.5rem;
+  position:relative;overflow:hidden;
+}
+.btn-calc:hover {
+  background:#ffc147;
+  box-shadow:0 4px 20px rgba(245,166,35,0.4);
+  transform:translateY(-1px);
+}
+.btn-calc:active { transform:translateY(0); }
+.btn-calc.loading { opacity:0.7;pointer-events:none; }
+
+/* RESULTS */
+.results-card {
+  background:var(--bg-panel);
+  border:1px solid var(--border-glow);
+  border-radius:4px;padding:1.5rem;
+}
+.results-card.has-result {
+  border-color:var(--amber);
+  box-shadow:0 0 20px rgba(245,166,35,0.08);
+}
+
+.result-row {
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border);
+}
+.result-row:last-child{border-bottom:none}
+.result-label {
+  font-size:0.72rem;letter-spacing:2px;color:var(--text-mid);
+  font-family:var(--font-mono);
+}
+.result-val {
+  font-family:var(--font-mono);font-size:1rem;
+  color:var(--amber);font-weight:600;
+}
+.result-val.hero-val {
+  font-size:1.6rem;
+  text-shadow:0 0 20px rgba(245,166,35,0.5);
+}
+.result-val.cyan { color:var(--cyan); }
+.result-val.green { color:var(--green); }
+.result-val.dim   { color:var(--text-mid);font-size:0.85rem; }
+
+.error-msg {
+  color:var(--red);font-family:var(--font-mono);font-size:0.8rem;
+  padding:10px;background:rgba(224,80,80,0.1);border-radius:3px;border:1px solid var(--red);
+  display:none;
+}
+
+/* STATUS indicator */
+.status-bar {
+  display:flex;align-items:center;gap:8px;margin-bottom:1rem;
+  font-family:var(--font-mono);font-size:0.65rem;letter-spacing:2px;color:var(--text-dim);
+}
+.status-dot {
+  width:6px;height:6px;border-radius:50%;
+  background:var(--text-dim);
+  transition:all 0.3s;
+}
+.status-dot.active {
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%,100%{opacity:1} 50%{opacity:0.5}
+}
+
+/* CHART AREA */
+.chart-wrap {
+  position:relative;height:280px;margin-top:1rem;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:2px}
+
+/* INFO TAGS */
+.info-tag {
+  display:inline-block;
+  font-family:var(--font-mono);font-size:0.6rem;
+  padding:2px 8px;border-radius:2px;
+  border:1px solid var(--border);
+  color:var(--text-dim);letter-spacing:1px;margin:2px;
+}
+.info-tag.method { border-color:var(--cyan-dim);color:var(--cyan-dim); }
+
+/* FOOTER */
+footer {
+  position:relative;z-index:1;
+  border-top:1px solid var(--border);
+  padding:1.5rem 2rem;
+  text-align:center;
+  font-family:var(--font-mono);font-size:0.65rem;
+  color:var(--text-dim);letter-spacing:2px;
+}
+
+/* SPAN FULL */
+.span-2 { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">Z</div>
+    <div>
+      <div class="logo-text">GASCALC PRO</div>
+      <div class="logo-sub">PETROLEUM ENGINEERING SUITE</div>
+    </div>
+  </div>
+  <div class="header-badges">
+    <div class="badge active">HALL-YARBOROUGH</div>
+    <div class="badge">WICHERT-AZIZ</div>
+    <div class="badge">v2.5</div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-title">GAS <span>COMPRESSIBILITY</span> CALCULATOR</div>
+  <div class="hero-sub">NATURAL GAS · RESERVOIR CONDITIONS · PVT ANALYSIS</div>
+</div>
+
+<div class="tabs-wrapper">
+  <button class="tab-btn active" onclick="switchTab('z_factor',this)">
+    <span class="tab-num">01</span>Z-FACTOR
+  </button>
+  <button class="tab-btn" onclick="switchTab('compressibility',this)">
+    <span class="tab-num">02</span>COMPRESSIBILITY
+  </button>
+  <button class="tab-btn" onclick="switchTab('fvf',this)">
+    <span class="tab-num">03</span>FVF & RESERVES
+  </button>
+  <button class="tab-btn" onclick="switchTab('material_balance',this)">
+    <span class="tab-num">04</span>MATERIAL BALANCE
+  </button>
+  <button class="tab-btn" onclick="switchTab('pseudocritical',this)">
+    <span class="tab-num">05</span>PSEUDO-CRITICAL
+  </button>
+</div>
+
+<div class="main">
+
+  <!-- ===== TAB 1: Z-FACTOR ===== -->
+  <div class="calc-panel active" id="panel-z_factor">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">GAS Z-<span>FACTOR</span></div>
+        <div class="panel-desc">Computes the gas deviation factor Z using the Hall-Yarborough iterative method. Also outputs gas density and viscosity using Lee-Gonzalez-Eakin correlation.</div>
+      </div>
+      <div class="formula-chip">Z = f(Ppr, Tpr) · Hall-Yarborough</div>
+    </div>
+    <div class="calc-grid">
+      <div class="card">
+        <div class="card-title">RESERVOIR CONDITIONS</div>
+        <div class="field-row">
+          <div class="field">
+            <label>PRESSURE <span class="unit">[psia]</span></label>
+            <input type="number" id="zf-pressure" placeholder="2500" value="2500">
+          </div>
+          <div class="field">
+            <label>TEMPERATURE <span class="unit">[°R]</span></label>
+            <input type="number" id="zf-temp" placeholder="620" value="620">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>PSEUDO-CRIT PRESS <span class="unit">[psia]</span></label>
+            <input type="number" id="zf-ppc" placeholder="672" value="672">
+          </div>
+          <div class="field">
+            <label>PSEUDO-CRIT TEMP <span class="unit">[°R]</span></label>
+            <input type="number" id="zf-tpc" placeholder="358" value="358">
+          </div>
+        </div>
+        <div class="field">
+          <label>SPECIFIC GRAVITY <span class="unit">[air=1]</span></label>
+          <input type="number" id="zf-sg" placeholder="0.65" value="0.65" step="0.01">
+        </div>
+        <div class="error-msg" id="zf-error"></div>
+        <button class="btn-calc" onclick="calcZFactor()">CALCULATE Z-FACTOR</button>
+      </div>
+
+      <div class="results-card" id="zf-results">
+        <div class="status-bar">
+          <div class="status-dot" id="zf-dot"></div>
+          <span id="zf-status">AWAITING INPUT</span>
+        </div>
+        <div class="card-title">COMPUTED PROPERTIES</div>
+        <div class="result-row">
+          <span class="result-label">Z-FACTOR</span>
+          <span class="result-val hero-val" id="res-zf-z">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">REDUCED PRESSURE (Ppr)</span>
+          <span class="result-val" id="res-zf-ppr">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">REDUCED TEMP (Tpr)</span>
+          <span class="result-val" id="res-zf-tpr">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">GAS DENSITY <span style="color:var(--text-dim)">[lb/ft³]</span></span>
+          <span class="result-val cyan" id="res-zf-rho">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">GAS VISCOSITY <span style="color:var(--text-dim)">[cp]</span></span>
+          <span class="result-val cyan" id="res-zf-mu">—</span>
+        </div>
+        <div style="margin-top:1rem">
+          <span class="info-tag method">HALL-YARBOROUGH</span>
+          <span class="info-tag method">LEE-GONZALEZ-EAKIN</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 2: COMPRESSIBILITY ===== -->
+  <div class="calc-panel" id="panel-compressibility">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">GAS <span>COMPRESSIBILITY</span></div>
+        <div class="panel-desc">Isothermal gas compressibility Cg derived from the real-gas EOS using numerical differentiation of Z with respect to pressure.</div>
+      </div>
+      <div class="formula-chip">Cg = 1/P − (1/Z)(∂Z/∂P)_T</div>
+    </div>
+    <div class="calc-grid">
+      <div class="card">
+        <div class="card-title">INPUT PARAMETERS</div>
+        <div class="field-row">
+          <div class="field">
+            <label>PRESSURE <span class="unit">[psia]</span></label>
+            <input type="number" id="cg-pressure" placeholder="2500" value="2500">
+          </div>
+          <div class="field">
+            <label>TEMPERATURE <span class="unit">[°R]</span></label>
+            <input type="number" id="cg-temp" placeholder="620" value="620">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Ppc <span class="unit">[psia]</span></label>
+            <input type="number" id="cg-ppc" placeholder="672" value="672">
+          </div>
+          <div class="field">
+            <label>Tpc <span class="unit">[°R]</span></label>
+            <input type="number" id="cg-tpc" placeholder="358" value="358">
+          </div>
+        </div>
+        <div class="error-msg" id="cg-error"></div>
+        <button class="btn-calc" onclick="calcCompressibility()">CALCULATE Cg</button>
+      </div>
+
+      <div class="results-card" id="cg-results">
+        <div class="status-bar">
+          <div class="status-dot" id="cg-dot"></div>
+          <span id="cg-status">AWAITING INPUT</span>
+        </div>
+        <div class="card-title">COMPRESSIBILITY RESULTS</div>
+        <div class="result-row">
+          <span class="result-label">Cg <span style="color:var(--text-dim)">[psi⁻¹]</span></span>
+          <span class="result-val hero-val" id="res-cg-val">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Z-FACTOR AT P</span>
+          <span class="result-val" id="res-cg-z">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Ppr (REDUCED PRESSURE)</span>
+          <span class="result-val dim" id="res-cg-ppr">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Tpr (REDUCED TEMP)</span>
+          <span class="result-val dim" id="res-cg-tpr">—</span>
+        </div>
+        <div style="margin-top:1rem">
+          <span class="info-tag method">NUMERICAL DIFFERENTIATION</span>
+          <span class="info-tag method">REAL-GAS EOS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 3: FVF ===== -->
+  <div class="calc-panel" id="panel-fvf">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">GAS FVF & <span>RESERVES</span></div>
+        <div class="panel-desc">Gas formation volume factor Bg converts reservoir volumes to surface. Include reservoir geometry for OGIP volumetric estimation.</div>
+      </div>
+      <div class="formula-chip">Bg = 0.02829ZT/P</div>
+    </div>
+    <div class="calc-grid">
+      <div class="card">
+        <div class="card-title">RESERVOIR & FLUID CONDITIONS</div>
+        <div class="field-row">
+          <div class="field">
+            <label>PRESSURE <span class="unit">[psia]</span></label>
+            <input type="number" id="fvf-pressure" placeholder="2500" value="2500">
+          </div>
+          <div class="field">
+            <label>TEMPERATURE <span class="unit">[°R]</span></label>
+            <input type="number" id="fvf-temp" placeholder="620" value="620">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Ppc <span class="unit">[psia]</span></label>
+            <input type="number" id="fvf-ppc" placeholder="672" value="672">
+          </div>
+          <div class="field">
+            <label>Tpc <span class="unit">[°R]</span></label>
+            <input type="number" id="fvf-tpc" placeholder="358" value="358">
+          </div>
+        </div>
+        <div class="card-title" style="margin-top:1rem">VOLUMETRIC (OPTIONAL)</div>
+        <div class="field-row">
+          <div class="field">
+            <label>AREA <span class="unit">[acres]</span></label>
+            <input type="number" id="fvf-area" placeholder="640">
+          </div>
+          <div class="field">
+            <label>NET PAY <span class="unit">[ft]</span></label>
+            <input type="number" id="fvf-thick" placeholder="50">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>POROSITY <span class="unit">[fraction]</span></label>
+            <input type="number" id="fvf-phi" placeholder="0.18" step="0.01" value="0.18">
+          </div>
+          <div class="field">
+            <label>Sw <span class="unit">[fraction]</span></label>
+            <input type="number" id="fvf-sw" placeholder="0.25" step="0.01" value="0.25">
+          </div>
+        </div>
+        <div class="error-msg" id="fvf-error"></div>
+        <button class="btn-calc" onclick="calcFVF()">CALCULATE FVF</button>
+      </div>
+
+      <div class="results-card" id="fvf-results">
+        <div class="status-bar">
+          <div class="status-dot" id="fvf-dot"></div>
+          <span id="fvf-status">AWAITING INPUT</span>
+        </div>
+        <div class="card-title">FVF RESULTS</div>
+        <div class="result-row">
+          <span class="result-label">Bg <span style="color:var(--text-dim)">[res ft³/scf]</span></span>
+          <span class="result-val hero-val" id="res-fvf-bg">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Bg <span style="color:var(--text-dim)">[res bbl/scf]</span></span>
+          <span class="result-val" id="res-fvf-bg-bbl">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Z-FACTOR</span>
+          <span class="result-val" id="res-fvf-z">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">OGIP <span style="color:var(--text-dim)">[Bscf]</span></span>
+          <span class="result-val green" id="res-fvf-ogip">—</span>
+        </div>
+        <div style="margin-top:1rem">
+          <span class="info-tag">VOLUMETRIC METHOD</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 4: MATERIAL BALANCE ===== -->
+  <div class="calc-panel" id="panel-material_balance">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">GAS MATERIAL <span>BALANCE</span></div>
+        <div class="panel-desc">p/Z plot analysis for gas reservoir OGIP estimation. Enter multiple pressure/production data pairs separated by commas.</div>
+      </div>
+      <div class="formula-chip">p/Z = (pi/Zi)(1 − Gp/G)</div>
+    </div>
+    <div class="calc-grid">
+      <div class="card">
+        <div class="card-title">INITIAL CONDITIONS</div>
+        <div class="field-row">
+          <div class="field">
+            <label>INITIAL PRESSURE <span class="unit">[psia]</span></label>
+            <input type="number" id="mb-pi" placeholder="3500" value="3500">
+          </div>
+          <div class="field">
+            <label>TEMPERATURE <span class="unit">[°R]</span></label>
+            <input type="number" id="mb-temp" placeholder="680" value="680">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Ppc <span class="unit">[psia]</span></label>
+            <input type="number" id="mb-ppc" placeholder="672" value="672">
+          </div>
+          <div class="field">
+            <label>Tpc <span class="unit">[°R]</span></label>
+            <input type="number" id="mb-tpc" placeholder="358" value="358">
+          </div>
+        </div>
+        <div class="field">
+          <label>RESERVOIR PRESSURES <span class="unit">[psia, comma-separated]</span></label>
+          <input type="text" id="mb-pressures" placeholder="3500,3200,2900,2600,2300" value="3500,3200,2900,2600,2300">
+        </div>
+        <div class="field">
+          <label>CUMULATIVE GAS Gp <span class="unit">[MMscf, comma-separated]</span></label>
+          <input type="text" id="mb-gp" placeholder="0,120,240,380,510" value="0,120,240,380,510">
+        </div>
+        <div class="error-msg" id="mb-error"></div>
+        <button class="btn-calc" onclick="calcMaterialBalance()">GENERATE p/Z PLOT</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">p/Z ANALYSIS RESULTS</div>
+        <div class="status-bar">
+          <div class="status-dot" id="mb-dot"></div>
+          <span id="mb-status">AWAITING INPUT</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">OGIP ESTIMATE <span style="color:var(--text-dim)">[MMscf]</span></span>
+          <span class="result-val hero-val green" id="res-mb-ogip">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">INITIAL p/Zi</span>
+          <span class="result-val" id="res-mb-pzi">—</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="mb-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 5: PSEUDO-CRITICAL ===== -->
+  <div class="calc-panel" id="panel-pseudocritical">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">PSEUDO-CRITICAL <span>PROPERTIES</span></div>
+        <div class="panel-desc">Estimate pseudo-critical pressure and temperature from gas specific gravity using Standing or Sutton correlations. Wichert-Aziz correction applied automatically for sour gas.</div>
+      </div>
+      <div class="formula-chip">Ppc, Tpc = f(γg) · Standing/Sutton</div>
+    </div>
+    <div class="calc-grid">
+      <div class="card">
+        <div class="card-title">GAS COMPOSITION</div>
+        <div class="field">
+          <label>SPECIFIC GRAVITY <span class="unit">[air=1.0]</span></label>
+          <input type="number" id="pc-sg" placeholder="0.65" value="0.65" step="0.01">
+        </div>
+        <div class="field">
+          <label>CORRELATION METHOD</label>
+          <select id="pc-method">
+            <option value="standing">STANDING (1977)</option>
+            <option value="sutton">SUTTON (1985)</option>
+          </select>
+        </div>
+        <div class="card-title" style="margin-top:1rem">SOUR GAS CORRECTION (WICHERT-AZIZ)</div>
+        <div class="field-row">
+          <div class="field">
+            <label>CO₂ <span class="unit">[mol%]</span></label>
+            <input type="number" id="pc-co2" placeholder="0" value="0" min="0" max="100">
+          </div>
+          <div class="field">
+            <label>H₂S <span class="unit">[mol%]</span></label>
+            <input type="number" id="pc-h2s" placeholder="0" value="0" min="0" max="100">
+          </div>
+        </div>
+        <div class="field">
+          <label>N₂ <span class="unit">[mol%]</span></label>
+          <input type="number" id="pc-n2" placeholder="0" value="0" min="0" max="100">
+        </div>
+        <div class="error-msg" id="pc-error"></div>
+        <button class="btn-calc" onclick="calcPseudoCritical()">CALCULATE Ppc & Tpc</button>
+      </div>
+
+      <div class="results-card" id="pc-results">
+        <div class="status-bar">
+          <div class="status-dot" id="pc-dot"></div>
+          <span id="pc-status">AWAITING INPUT</span>
+        </div>
+        <div class="card-title">PSEUDO-CRITICAL RESULTS</div>
+        <div class="result-row">
+          <span class="result-label">Ppc (CORRECTED) <span style="color:var(--text-dim)">[psia]</span></span>
+          <span class="result-val hero-val" id="res-pc-ppc">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Tpc (CORRECTED) <span style="color:var(--text-dim)">[°R]</span></span>
+          <span class="result-val hero-val" id="res-pc-tpc">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Ppc (RAW) <span style="color:var(--text-dim)">[psia]</span></span>
+          <span class="result-val dim" id="res-pc-ppc-raw">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Tpc (RAW) <span style="color:var(--text-dim)">[°R]</span></span>
+          <span class="result-val dim" id="res-pc-tpc-raw">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">MOLECULAR WEIGHT</span>
+          <span class="result-val cyan" id="res-pc-mw">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">WICHERT-AZIZ APPLIED</span>
+          <span class="result-val" id="res-pc-wa">—</span>
+        </div>
+        <div style="margin-top:1rem" id="pc-method-tag"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  GASCALC PRO · HALL-YARBOROUGH · WICHERT-AZIZ · STANDING · SUTTON · LEE-GONZALEZ-EAKIN · PETROLEUM ENGINEERING SUITE
+</footer>
+
+<script>
+// Tab switching
+function switchTab(id, btn) {
+  document.querySelectorAll('.calc-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function setStatus(prefix, active, msg) {
+  const dot = document.getElementById(prefix + '-dot');
+  const status = document.getElementById(prefix + '-status');
+  dot.classList.toggle('active', active);
+  status.textContent = msg;
+}
+
+function showError(prefix, msg) {
+  const el = document.getElementById(prefix + '-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+async function apiCall(endpoint, data, prefix) {
+  try {
+    setStatus(prefix, false, 'COMPUTING...');
+    const res = await fetch('/api/' + endpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (json.status !== 'success') throw new Error(json.message);
+    return json;
+  } catch(e) {
+    showError(prefix, 'ERROR: ' + e.message);
+    setStatus(prefix, false, 'ERROR');
+    return null;
+  }
+}
+
+// ---- Z-FACTOR ----
+async function calcZFactor() {
+  const d = {
+    pressure: document.getElementById('zf-pressure').value,
+    temperature: document.getElementById('zf-temp').value,
+    ppc: document.getElementById('zf-ppc').value,
+    tpc: document.getElementById('zf-tpc').value,
+    sg: document.getElementById('zf-sg').value
+  };
+  const r = await apiCall('z_factor', d, 'zf');
+  if (!r) return;
+  document.getElementById('res-zf-z').textContent = r.z_factor;
+  document.getElementById('res-zf-ppr').textContent = r.ppr;
+  document.getElementById('res-zf-tpr').textContent = r.tpr;
+  document.getElementById('res-zf-rho').textContent = r.density + ' lb/ft³';
+  document.getElementById('res-zf-mu').textContent = r.viscosity + ' cp';
+  document.getElementById('zf-results').classList.add('has-result');
+  setStatus('zf', true, 'CALCULATION COMPLETE');
+}
+
+// ---- COMPRESSIBILITY ----
+async function calcCompressibility() {
+  const d = {
+    pressure: document.getElementById('cg-pressure').value,
+    temperature: document.getElementById('cg-temp').value,
+    ppc: document.getElementById('cg-ppc').value,
+    tpc: document.getElementById('cg-tpc').value
+  };
+  const r = await apiCall('compressibility', d, 'cg');
+  if (!r) return;
+  document.getElementById('res-cg-val').textContent = r.cg + ' psi⁻¹';
+  document.getElementById('res-cg-z').textContent = r.z_factor;
+  document.getElementById('res-cg-ppr').textContent = r.ppr;
+  document.getElementById('res-cg-tpr').textContent = r.tpr;
+  document.getElementById('cg-results').classList.add('has-result');
+  setStatus('cg', true, 'CALCULATION COMPLETE');
+}
+
+// ---- FVF ----
+async function calcFVF() {
+  const d = {
+    pressure: document.getElementById('fvf-pressure').value,
+    temperature: document.getElementById('fvf-temp').value,
+    ppc: document.getElementById('fvf-ppc').value,
+    tpc: document.getElementById('fvf-tpc').value,
+    area: document.getElementById('fvf-area').value || 0,
+    thickness: document.getElementById('fvf-thick').value || 0,
+    porosity: document.getElementById('fvf-phi').value || 0,
+    sw: document.getElementById('fvf-sw').value || 0
+  };
+  const r = await apiCall('fvf', d, 'fvf');
+  if (!r) return;
+  document.getElementById('res-fvf-bg').textContent = r.bg_cuft + ' ft³/scf';
+  document.getElementById('res-fvf-bg-bbl').textContent = r.bg_bbl + ' bbl/scf';
+  document.getElementById('res-fvf-z').textContent = r.z_factor;
+  document.getElementById('res-fvf-ogip').textContent = r.ogip_bscf ? r.ogip_bscf + ' Bscf' : 'N/A (no geometry)';
+  document.getElementById('fvf-results').classList.add('has-result');
+  setStatus('fvf', true, 'CALCULATION COMPLETE');
+}
+
+// ---- MATERIAL BALANCE ----
+let mbChart = null;
+async function calcMaterialBalance() {
+  const d = {
+    pi: document.getElementById('mb-pi').value,
+    temperature: document.getElementById('mb-temp').value,
+    ppc: document.getElementById('mb-ppc').value,
+    tpc: document.getElementById('mb-tpc').value,
+    pressures: document.getElementById('mb-pressures').value,
+    gp: document.getElementById('mb-gp').value
+  };
+  const r = await apiCall('material_balance', d, 'mb');
+  if (!r) return;
+
+  document.getElementById('res-mb-ogip').textContent = r.ogip_mmscf ? r.ogip_mmscf + ' MMscf' : '—';
+  document.getElementById('res-mb-pzi').textContent = r.pzi;
+
+  // Build chart data
+  const pts = r.pz_points;
+  const scatterData = pts.map(p => ({x: p.gp, y: p.pz}));
+
+  // Trend line
+  const maxGp = r.ogip_mmscf ? r.ogip_mmscf * 1.05 : Math.max(...pts.map(p=>p.gp))*1.2;
+  const trendData = [
+    {x: 0, y: r.intercept},
+    {x: maxGp, y: r.intercept + r.slope * maxGp}
+  ];
+
+  if (mbChart) mbChart.destroy();
+  const ctx = document.getElementById('mb-chart').getContext('2d');
+  mbChart = new Chart(ctx, {
+    data: {
+      datasets: [
+        {
+          type: 'scatter',
+          label: 'p/Z Data Points',
+          data: scatterData,
+          backgroundColor: '#f5a623',
+          pointRadius: 7,
+          pointHoverRadius: 9
+        },
+        {
+          type: 'line',
+          label: 'Linear Regression',
+          data: trendData,
+          borderColor: '#00c8e0',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8a9ab8', font: { family: 'Share Tech Mono', size: 10 } } }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Gp (MMscf)', color: '#8a9ab8', font: { family: 'Share Tech Mono', size: 10 } },
+          grid: { color: '#1e2d3d' },
+          ticks: { color: '#8a9ab8', font: { family: 'Share Tech Mono', size: 9 } }
+        },
+        y: {
+          title: { display: true, text: 'p/Z (psia)', color: '#8a9ab8', font: { family: 'Share Tech Mono', size: 10 } },
+          grid: { color: '#1e2d3d' },
+          ticks: { color: '#8a9ab8', font: { family: 'Share Tech Mono', size: 9 } }
+        }
+      }
+    }
+  });
+  setStatus('mb', true, 'p/Z PLOT GENERATED');
+}
+
+// ---- PSEUDO-CRITICAL ----
+async function calcPseudoCritical() {
+  const d = {
+    sg: document.getElementById('pc-sg').value,
+    method: document.getElementById('pc-method').value,
+    co2: document.getElementById('pc-co2').value,
+    h2s: document.getElementById('pc-h2s').value,
+    n2: document.getElementById('pc-n2').value
+  };
+  const r = await apiCall('pseudocritical', d, 'pc');
+  if (!r) return;
+  document.getElementById('res-pc-ppc').textContent = r.ppc + ' psia';
+  document.getElementById('res-pc-tpc').textContent = r.tpc + ' °R';
+  document.getElementById('res-pc-ppc-raw').textContent = r.ppc_raw + ' psia';
+  document.getElementById('res-pc-tpc-raw').textContent = r.tpc_raw + ' °R';
+  document.getElementById('res-pc-mw').textContent = r.mw + ' lb/lb-mol';
+  document.getElementById('res-pc-wa').textContent = r.wichert_applied ? '✓ YES' : '✗ NO';
+  document.getElementById('res-pc-wa').style.color = r.wichert_applied ? 'var(--green)' : 'var(--text-dim)';
+  document.getElementById('pc-method-tag').innerHTML = `<span class="info-tag method">${r.method.toUpperCase()} CORRELATION</span>${r.wichert_applied ? '<span class="info-tag method">WICHERT-AZIZ</span>' : ''}`;
+  document.getElementById('pc-results').classList.add('has-result');
+  setStatus('pc', true, 'CALCULATION COMPLETE');
+}
+</script>
+</body>
+</html>
